@@ -1,11 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-stone-50 text-stone-900;
+@layer base {
+  body {
+    @apply bg-sand-50 text-ocean-900 font-sans;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-ocean-500 hover:bg-ocean-600 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg active:scale-95;
+  }
+  .btn-secondary {
+    @apply bg-sand-100 hover:bg-sand-200 text-ocean-700 font-semibold px-6 py-3 rounded-xl border border-sand-300 transition-all duration-200 active:scale-95;
+  }
+  .card {
+    @apply bg-white rounded-2xl shadow-sm border border-sand-100;
+  }
+  .input {
+    @apply w-full border border-sand-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-ocean-300 focus:border-ocean-400 transition-colors placeholder-sand-400;
+  }
+}
+
+.wave-divider {
+  position: relative;
+  overflow: hidden;
 }
 
 .prose pre {
-  @apply bg-stone-100 rounded p-3 text-sm overflow-x-auto;
+  @apply bg-sand-100 rounded-lg p-3 text-sm overflow-x-auto;
 }

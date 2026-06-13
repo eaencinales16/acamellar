@@ -9,63 +9,78 @@ export default function Dashboard() {
     fetch('/api/stats').then(r => r.json()).then(setStats);
   }, []);
 
-  if (!stats) return <div className="text-center py-12 text-stone-400">Loading...</div>;
+  if (!stats) return (
+    <div className="flex items-center justify-center py-24">
+      <div className="flex flex-col items-center gap-3 text-ocean-300">
+        <svg className="animate-spin h-8 w-8" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+        </svg>
+        <span className="text-sm">Loading your dashboard...</span>
+      </div>
+    </div>
+  );
 
   const { total, byStatus, connections, pendingOutreach, recentApps, upcomingReminders } = stats;
-  const inProgress = (byStatus.find(s => s.status === 'phone_screen')?.count || 0) +
-    (byStatus.find(s => s.status === 'interview')?.count || 0) +
-    (byStatus.find(s => s.status === 'offer')?.count || 0);
+  const inProgress = (byStatus.find(s => s.status === 'phone_screen')?.count || 0)
+    + (byStatus.find(s => s.status === 'interview')?.count || 0)
+    + (byStatus.find(s => s.status === 'offer')?.count || 0);
 
   return (
     <div className="space-y-6">
+      {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-stone-800">Your Job Search Dashboard</h1>
-        <p className="text-stone-500 text-sm mt-1">Stay aggressive. Stay consistent. 🐪</p>
+        <h1 className="font-display text-3xl font-bold text-ocean-800">Your Dashboard</h1>
+        <p className="text-sand-500 mt-1">Stay aggressive. Stay consistent. The tide turns for those who keep swimming. 🐪</p>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Applications', value: total, color: 'bg-camel-100 text-camel-800' },
-          { label: 'Active (In Progress)', value: inProgress, color: 'bg-orange-100 text-orange-800' },
-          { label: 'Connections', value: connections, color: 'bg-blue-100 text-blue-800' },
-          { label: 'Pending Outreach', value: pendingOutreach, color: 'bg-red-100 text-red-800' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className={`rounded-xl p-4 ${color}`}>
-            <div className="text-3xl font-bold">{value}</div>
-            <div className="text-sm font-medium mt-1">{label}</div>
+          { label: 'Total Applications', value: total,         color: 'bg-ocean-700',    text: 'text-white', sub: 'text-ocean-200' },
+          { label: 'Active (In Progress)', value: inProgress,  color: 'bg-seafoam-500',  text: 'text-white', sub: 'text-seafoam-100' },
+          { label: 'Connections',          value: connections,  color: 'bg-sand-400',     text: 'text-white', sub: 'text-sand-100' },
+          { label: 'Pending Outreach',     value: pendingOutreach, color: 'bg-coral-400', text: 'text-white', sub: 'text-coral-100' },
+        ].map(({ label, value, color, text, sub }) => (
+          <div key={label} className={`${color} rounded-2xl p-5 shadow-md`}>
+            <div className={`text-4xl font-bold font-display ${text}`}>{value}</div>
+            <div className={`text-xs font-medium mt-1 ${sub}`}>{label}</div>
           </div>
         ))}
       </div>
 
       {/* Accountability nudge */}
       {total < 5 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-          <span className="text-2xl">⚠️</span>
+        <div className="bg-gradient-to-r from-ocean-50 to-seafoam-50 border border-ocean-200 rounded-2xl p-4 flex items-start gap-3">
+          <span className="text-2xl mt-0.5">⚠️</span>
           <div>
-            <p className="font-semibold text-red-800">Time to pick up the pace!</p>
-            <p className="text-red-600 text-sm">Aim for at least 5 applications this week. Add more now — <Link to="/applications" className="underline">+ New Application</Link>.</p>
+            <p className="font-semibold text-ocean-800">Time to pick up the pace!</p>
+            <p className="text-ocean-600 text-sm mt-0.5">Aim for at least 5 applications this week. The ocean rewards those who dive in. <Link to="/applications" className="underline font-medium">+ Add one now</Link></p>
           </div>
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-5">
         {/* Recent applications */}
-        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="font-semibold text-stone-700">Recent Applications</h2>
-            <Link to="/applications" className="text-camel-600 text-sm hover:underline">View all</Link>
+        <div className="card p-5">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="font-semibold text-ocean-800">Recent Applications</h2>
+            <Link to="/applications" className="text-ocean-500 text-sm hover:text-ocean-700 font-medium">View all →</Link>
           </div>
           {recentApps.length === 0 ? (
-            <p className="text-stone-400 text-sm py-4 text-center">No applications yet. <Link to="/applications" className="text-camel-600 underline">Add one!</Link></p>
+            <div className="text-center py-8 text-sand-400">
+              <div className="text-3xl mb-2">📋</div>
+              <p className="text-sm">No applications yet.</p>
+              <Link to="/applications" className="text-ocean-500 underline text-sm">Add your first one</Link>
+            </div>
           ) : (
-            <ul className="divide-y divide-stone-100">
+            <ul className="divide-y divide-sand-100">
               {recentApps.map(app => (
-                <li key={app.id} className="py-2">
-                  <Link to={`/applications/${app.id}`} className="flex justify-between items-center hover:bg-stone-50 -mx-2 px-2 rounded">
+                <li key={app.id}>
+                  <Link to={`/applications/${app.id}`} className="flex justify-between items-center py-3 hover:bg-sand-50 -mx-2 px-2 rounded-lg transition-colors">
                     <div>
-                      <div className="font-medium text-sm">{app.position}</div>
-                      <div className="text-stone-500 text-xs">{app.company}</div>
+                      <div className="font-medium text-sm text-ocean-800">{app.position}</div>
+                      <div className="text-sand-500 text-xs">{app.company}</div>
                     </div>
                     <StatusBadge status={app.status} />
                   </Link>
@@ -76,19 +91,23 @@ export default function Dashboard() {
         </div>
 
         {/* Upcoming reminders */}
-        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="font-semibold text-stone-700">Upcoming Reminders</h2>
-            <Link to="/reminders" className="text-camel-600 text-sm hover:underline">View all</Link>
+        <div className="card p-5">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="font-semibold text-ocean-800">Upcoming Reminders</h2>
+            <Link to="/reminders" className="text-ocean-500 text-sm hover:text-ocean-700 font-medium">View all →</Link>
           </div>
           {upcomingReminders.length === 0 ? (
-            <p className="text-stone-400 text-sm py-4 text-center">No reminders set. <Link to="/reminders" className="text-camel-600 underline">Add one!</Link></p>
+            <div className="text-center py-8 text-sand-400">
+              <div className="text-3xl mb-2">⏰</div>
+              <p className="text-sm">No reminders set.</p>
+              <Link to="/reminders" className="text-ocean-500 underline text-sm">Add one</Link>
+            </div>
           ) : (
-            <ul className="divide-y divide-stone-100">
+            <ul className="divide-y divide-sand-100">
               {upcomingReminders.map(r => (
-                <li key={r.id} className="py-2">
-                  <div className="text-sm font-medium">{r.title}</div>
-                  <div className="text-xs text-stone-500">{new Date(r.scheduled_at).toLocaleString()}{r.company ? ` · ${r.company}` : ''}</div>
+                <li key={r.id} className="py-3">
+                  <div className="text-sm font-medium text-ocean-800">{r.title}</div>
+                  <div className="text-xs text-sand-400 mt-0.5">{new Date(r.scheduled_at).toLocaleString()}{r.company ? ` · ${r.company}` : ''}</div>
                 </li>
               ))}
             </ul>
@@ -97,16 +116,16 @@ export default function Dashboard() {
       </div>
 
       {/* Status breakdown */}
-      <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4">
-        <h2 className="font-semibold text-stone-700 mb-3">Application Status Breakdown</h2>
+      <div className="card p-5">
+        <h2 className="font-semibold text-ocean-800 mb-4">Pipeline Breakdown</h2>
         <div className="flex flex-wrap gap-3">
           {byStatus.map(s => (
-            <div key={s.status} className="flex items-center gap-2">
+            <div key={s.status} className="flex items-center gap-2 bg-sand-50 rounded-xl px-3 py-2">
               <StatusBadge status={s.status} />
-              <span className="text-stone-600 text-sm font-semibold">{s.count}</span>
+              <span className="text-ocean-700 text-sm font-bold">{s.count}</span>
             </div>
           ))}
-          {byStatus.length === 0 && <p className="text-stone-400 text-sm">No data yet.</p>}
+          {byStatus.length === 0 && <p className="text-sand-400 text-sm">No applications tracked yet.</p>}
         </div>
       </div>
     </div>
