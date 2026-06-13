@@ -13,6 +13,7 @@ app.use(express.json({ limit: '10mb' }));
 // Routes
 app.use('/api/applications', require('./routes/applications'));
 app.use('/api/applications/:id/chat', require('./routes/chat'));
+app.use('/api/chat', require('./routes/generalChat'));
 app.use('/api/connections', require('./routes/connections'));
 app.use('/api/reminders', require('./routes/reminders'));
 app.use('/api/profile', require('./routes/profile'));

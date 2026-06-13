@@ -92,4 +92,19 @@ ${resume || 'Not provided'}`;
   return callAI(system, userMessage, history);
 }
 
-module.exports = { tailorResume, generateCoverLetter, chatAboutJob, callAI };
+async function chatGeneral(profile, jobSearchContext, conversationHistory, userMessage) {
+  const system = `You are A Camellar — a sharp, motivating career coach and accountability partner for an aggressive job search. You are talking with ${profile?.name || 'the job seeker'} from their dashboard. Be specific, practical, warm, and a little tough when they need a push. Help with strategy, prioritization, motivation, interview prep, networking, and keeping momentum. Reference their actual job search data when relevant, and proactively hold them accountable to consistent progress.
+
+CURRENT JOB SEARCH SNAPSHOT:
+${jobSearchContext}
+
+CANDIDATE RESUME:
+${profile?.resume || 'Not provided yet — encourage them to add it in Profile.'}
+
+Keep responses focused and actionable. Use markdown for structure when helpful.`;
+
+  const history = conversationHistory.map(m => ({ role: m.role, content: m.content }));
+  return callAI(system, userMessage, history);
+}
+
+module.exports = { tailorResume, generateCoverLetter, chatAboutJob, chatGeneral, callAI };

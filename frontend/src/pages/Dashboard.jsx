@@ -1,6 +1,100 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
 import StatusBadge from '../components/StatusBadge';
+
+const COACH_PROMPTS = [
+  'What should I focus on today?',
+  'Help me prioritize my applications',
+  'Keep me accountable this week',
+  'Where am I losing momentum?',
+];
+
+function CoachChat() {
+  const [chat, setChat] = useState([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef(null);
+
+  useEffect(() => { fetch('/api/chat').then(r => r.json()).then(setChat); }, []);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chat, loading]);
+
+  const send = async e => {
+    e?.preventDefault();
+    if (!input.trim() || loading) return;
+    const msg = input; setInput('');
+    setChat(c => [...c, { role: 'user', content: msg, id: Date.now() }]);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg }) });
+      const data = await res.json();
+      if (data.error) return alert(data.error);
+      setChat(c => [...c, { role: 'assistant', content: data.reply, id: Date.now() + 1 }]);
+    } finally { setLoading(false); }
+  };
+
+  const clear = async () => {
+    if (!confirm('Clear your coach conversation?')) return;
+    await fetch('/api/chat', { method: 'DELETE' });
+    setChat([]);
+  };
+
+  return (
+    <div className="card flex flex-col" style={{ height: '60vh', minHeight: 420 }}>
+      <div className="px-5 py-3.5 border-b border-sand-100 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">🐪</span>
+          <div>
+            <h2 className="font-semibold text-ocean-800 text-sm">Talk to your Coach</h2>
+            <p className="text-xs text-sand-400">Aware of your whole search · remembers this conversation</p>
+          </div>
+        </div>
+        {chat.length > 0 && <button onClick={clear} className="text-xs text-sand-400 hover:text-coral-500 transition-colors">Clear</button>}
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {chat.length === 0 && !loading && (
+          <div className="text-center py-8 text-sand-400">
+            <div className="text-4xl mb-3">💬</div>
+            <p className="text-sm font-medium text-sand-500">Your AI accountability partner is ready</p>
+            <p className="text-xs mt-1 mb-4">Ask about strategy, motivation, or what to tackle next</p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {COACH_PROMPTS.map(q => (
+                <button key={q} onClick={() => setInput(q)} className="text-xs bg-ocean-50 text-ocean-600 border border-ocean-200 px-3 py-1.5 rounded-full hover:bg-ocean-100 transition-colors">{q}</button>
+              ))}
+            </div>
+          </div>
+        )}
+        {chat.map((msg, i) => (
+          <div key={msg.id || i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm ${msg.role === 'user' ? 'bg-ocean-600 text-white' : 'bg-sand-50 border border-sand-100 text-ocean-800'}`}>
+              {msg.role === 'assistant'
+                ? <div className="prose prose-sm max-w-none"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
+                : msg.content}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="bg-sand-50 border border-sand-100 rounded-2xl px-4 py-3 text-sm text-sand-400 flex items-center gap-2">
+              <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              Your coach is thinking...
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      <form onSubmit={send} className="p-3 border-t border-sand-100 flex gap-2">
+        <input value={input} onChange={e => setInput(e.target.value)} placeholder="Ask your coach anything..." className="input flex-1" disabled={loading} />
+        <button type="submit" disabled={loading || !input.trim()} className="btn-primary text-sm py-2 px-5 disabled:opacity-50">Send</button>
+      </form>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
@@ -59,6 +153,9 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Coach chat */}
+      <CoachChat />
 
       <div className="grid md:grid-cols-2 gap-5">
         {/* Recent applications */}
