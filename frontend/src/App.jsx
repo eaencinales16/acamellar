@@ -19,13 +19,16 @@ const NAV = [
 ];
 
 export default function App() {
-  const [authState, setAuthState] = useState('loading'); // 'loading' | 'in' | 'out'
+  const [authState, setAuthState] = useState('loading'); // 'loading' | 'in' | 'out' | 'full'
   const [user, setUser] = useState(null);
 
   useEffect(() => {
     fetch('/api/me')
-      .then(r => (r.ok ? r.json() : Promise.reject()))
-      .then(data => { setUser(data.user); setAuthState('in'); })
+      .then(r => {
+        if (r.ok) return r.json().then(data => { setUser(data.user); setAuthState('in'); });
+        if (r.status === 403) return setAuthState('full');
+        return setAuthState('out');
+      })
       .catch(() => setAuthState('out'));
   }, []);
 
@@ -36,6 +39,19 @@ export default function App() {
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
         </svg>
+      </div>
+    );
+  }
+
+  if (authState === 'full') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-coastal-gradient px-6">
+        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-8 max-w-md text-center shadow-2xl">
+          <div className="text-5xl mb-4">🐪</div>
+          <h1 className="text-white font-display text-2xl font-bold mb-2">We're at capacity</h1>
+          <p className="text-ocean-100 text-sm mb-6">A Camellar is limited to {5} accounts and all slots are currently taken. If this is your account, ask the owner to free up a slot.</p>
+          <a href="/logout" className="inline-block bg-white/10 hover:bg-white/20 border border-white/25 text-white font-semibold px-6 py-2.5 rounded-xl transition-all">Sign out</a>
+        </div>
       </div>
     );
   }

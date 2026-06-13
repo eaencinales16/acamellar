@@ -75,6 +75,16 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now'))
   );
 
+  -- Access control: the first N distinct Auth0 accounts to log in each claim a slot.
+  -- Enforces a hard cap on how many people can use the app (see MAX_ACCOUNTS).
+  CREATE TABLE IF NOT EXISTS authorized_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    auth0_sub TEXT NOT NULL UNIQUE,
+    email TEXT,
+    name TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
   -- Weekly accountability goals. week_start is the Monday (YYYY-MM-DD) of the week.
   -- Progress is computed live from applications.applied_date and connections.outreach_date.
   CREATE TABLE IF NOT EXISTS weekly_goals (

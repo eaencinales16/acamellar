@@ -35,17 +35,38 @@ app.get('/signup', (req, res) => {
   });
 });
 
-// The frontend polls this to decide whether to show the app or the landing page.
+// Hard cap on how many distinct accounts may use the app.
+const MAX_ACCOUNTS = 5;
+
+// Decide whether the authenticated user is allowed in. The first MAX_ACCOUNTS
+// distinct Auth0 accounts to reach here each claim a permanent slot.
+// Returns { status: 'authorized' | 'unauthenticated' | 'full' }.
+function authorize(req) {
+  if (!req.oidc || !req.oidc.isAuthenticated()) return { status: 'unauthenticated' };
+  const sub = req.oidc.user.sub;
+  const existing = db.prepare('SELECT 1 FROM authorized_users WHERE auth0_sub = ?').get(sub);
+  if (existing) return { status: 'authorized' };
+  const count = db.prepare('SELECT COUNT(*) AS c FROM authorized_users').get().c;
+  if (count >= MAX_ACCOUNTS) return { status: 'full' };
+  db.prepare('INSERT INTO authorized_users (auth0_sub, email, name) VALUES (?, ?, ?)')
+    .run(sub, req.oidc.user.email || null, req.oidc.user.name || null);
+  console.log(`Account slot claimed (${count + 1}/${MAX_ACCOUNTS}): ${req.oidc.user.email || sub}`);
+  return { status: 'authorized' };
+}
+
+// The frontend polls this to decide what to render: the app, the landing page, or a "full" screen.
 app.get('/api/me', (req, res) => {
-  if (req.oidc && req.oidc.isAuthenticated()) {
-    return res.json({ authenticated: true, user: req.oidc.user });
-  }
+  const a = authorize(req);
+  if (a.status === 'authorized') return res.json({ authenticated: true, user: req.oidc.user });
+  if (a.status === 'full') return res.status(403).json({ authenticated: true, error: 'capacity_full' });
   res.status(401).json({ authenticated: false });
 });
 
-// Gate for data routes — returns 401 JSON (not an HTML redirect) so fetch() can handle it.
+// Gate for data routes — returns JSON (not an HTML redirect) so fetch() can handle it.
 function requireAuth(req, res, next) {
-  if (req.oidc && req.oidc.isAuthenticated()) return next();
+  const a = authorize(req);
+  if (a.status === 'authorized') return next();
+  if (a.status === 'full') return res.status(403).json({ error: 'capacity_full' });
   res.status(401).json({ error: 'unauthorized' });
 }
 
