@@ -1,0 +1,54 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2E86AB"/>
+      <stop offset="55%" stop-color="#5ea396"/>
+      <stop offset="100%" stop-color="#e8d0a3"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fae0d8"/>
+      <stop offset="100%" stop-color="#e8927c"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded coastal background -->
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+
+  <!-- Sun -->
+  <circle cx="48" cy="18" r="6.5" fill="url(#sun)" opacity="0.92"/>
+
+  <!-- Sand dunes -->
+  <path d="M0 50 Q16 42 32 48 T64 46 L64 64 L0 64 Z" fill="#d4a96a"/>
+  <path d="M0 56 Q20 50 40 55 T64 54 L64 64 L0 64 Z" fill="#c9906a"/>
+
+  <!-- Camel silhouette -->
+  <g fill="#0f445c">
+    <path d="M11 52
+             L11 40
+             Q11 36 14 35
+             Q15 27 20 27
+             Q24 27 24.5 34
+             Q25 31 28 31
+             Q31 31 31.5 35
+             Q33 30 37 31
+             L39 24
+             Q39.5 21 42 21
+             Q47 21 47 25
+             Q47 27 45 27.5
+             L43 28
+             Q42 33 40 36
+             L40 52
+             L36 52
+             L36 40
+             Q30 42 24 40
+             L18 40
+             L18 52
+             Z"/>
+    <rect x="12" y="40" width="3.4" height="12" rx="1"/>
+    <rect x="19" y="40" width="3.4" height="12" rx="1"/>
+    <rect x="31" y="38" width="3.4" height="14" rx="1"/>
+    <rect x="37" y="38" width="3.4" height="14" rx="1"/>
+    <!-- tail -->
+    <path d="M11 36 Q8 38 9 42 Q11 40 12 39 Z"/>
+  </g>
+</svg>
