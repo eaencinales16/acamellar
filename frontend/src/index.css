@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-stone-50 text-stone-900;
+}
+
+.prose pre {
+  @apply bg-stone-100 rounded p-3 text-sm overflow-x-auto;
+}
