@@ -1,6 +1,4 @@
-import React, { useState } from 'react';
-
-const APP_PASSWORD = 'camellar2026';
+import React from 'react';
 
 const FEATURES = [
   { icon: '📋', title: 'Track Every Application', desc: 'Organize your job search pipeline with statuses from researching to offer.' },
@@ -11,25 +9,8 @@ const FEATURES = [
   { icon: '📧', title: 'Accountability Partner', desc: 'Daily digest emails and custom reminders to keep your search aggressive.' },
 ];
 
-export default function Landing({ onAuth }) {
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async e => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    await new Promise(r => setTimeout(r, 600)); // brief pause for feel
-    if (password === APP_PASSWORD) {
-      localStorage.setItem('acamellar_auth', '1');
-      onAuth();
-    } else {
-      setError('Incorrect password. Try again.');
-      setPassword('');
-    }
-    setLoading(false);
-  };
+export default function Landing() {
+  const login = () => { window.location.href = '/login'; };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -78,41 +59,15 @@ export default function Landing({ onAuth }) {
             AI-powered job search tracker with tailored resumes, cover letters, a built-in career coach, and the accountability reminders to keep you relentlessly moving forward.
           </p>
 
-          {/* Password form */}
+          {/* Login */}
           <div className="animate-fade-up w-full max-w-sm" style={{ animationDelay: '0.4s' }}>
-            <form onSubmit={handleSubmit} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-2xl">
-              <p className="text-ocean-100 text-sm font-medium mb-4">Enter your access password to continue</p>
-              <div className="relative mb-3">
-                <input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Password"
-                  autoFocus
-                  className="w-full bg-white/10 border border-white/25 text-white placeholder-ocean-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-seafoam-300 focus:border-transparent transition-all"
-                />
-              </div>
-              {error && (
-                <p className="text-coral-300 text-xs mb-3 flex items-center gap-1">
-                  <span>⚠</span> {error}
-                </p>
-              )}
-              <button
-                type="submit"
-                disabled={loading || !password}
-                className="w-full bg-seafoam-500 hover:bg-seafoam-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                    </svg>
-                    Checking...
-                  </span>
-                ) : 'Enter →'}
-              </button>
-            </form>
+            <button
+              onClick={login}
+              className="w-full bg-seafoam-500 hover:bg-seafoam-400 text-white font-semibold py-4 rounded-2xl transition-all duration-200 shadow-2xl hover:shadow-seafoam-500/30 active:scale-95 text-lg"
+            >
+              Log In →
+            </button>
+            <p className="text-ocean-200 text-xs mt-3">Secure login powered by Auth0</p>
           </div>
         </div>
       </section>
@@ -143,22 +98,12 @@ export default function Landing({ onAuth }) {
           <div className="text-5xl mb-4">🐪</div>
           <h2 className="font-display text-3xl font-bold text-white mb-4">Ready to take charge of your search?</h2>
           <p className="text-ocean-100 mb-8">The ocean is patient. Your job search shouldn't be.</p>
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-sm mx-auto">
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="Enter password"
-              className="flex-1 bg-white/15 border border-white/25 text-white placeholder-ocean-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-seafoam-300"
-            />
-            <button
-              type="submit"
-              disabled={loading || !password}
-              className="bg-white text-ocean-700 font-bold px-6 py-3 rounded-xl hover:bg-sand-50 transition-all active:scale-95 shadow-lg whitespace-nowrap disabled:opacity-50"
-            >
-              {loading ? '...' : 'Get Started'}
-            </button>
-          </form>
+          <button
+            onClick={login}
+            className="bg-white text-ocean-700 font-bold px-8 py-3.5 rounded-xl hover:bg-sand-50 transition-all active:scale-95 shadow-lg text-lg"
+          >
+            Log In to Get Started →
+          </button>
         </div>
       </section>
 

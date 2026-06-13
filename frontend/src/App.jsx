@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, NavLink } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
@@ -19,9 +19,28 @@ const NAV = [
 ];
 
 export default function App() {
-  const [authed, setAuthed] = useState(() => localStorage.getItem('acamellar_auth') === '1');
+  const [authState, setAuthState] = useState('loading'); // 'loading' | 'in' | 'out'
+  const [user, setUser] = useState(null);
 
-  if (!authed) return <Landing onAuth={() => setAuthed(true)} />;
+  useEffect(() => {
+    fetch('/api/me')
+      .then(r => (r.ok ? r.json() : Promise.reject()))
+      .then(data => { setUser(data.user); setAuthState('in'); })
+      .catch(() => setAuthState('out'));
+  }, []);
+
+  if (authState === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-coastal-gradient">
+        <svg className="animate-spin h-10 w-10 text-white" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+        </svg>
+      </div>
+    );
+  }
+
+  if (authState === 'out') return <Landing />;
 
   return (
     <div className="min-h-screen flex flex-col bg-sand-50">
@@ -33,12 +52,17 @@ export default function App() {
             <span className="font-display font-bold text-xl tracking-wide">A Camellar</span>
             <span className="hidden sm:inline text-ocean-300 text-sm">· Job Search Tracker</span>
           </div>
-          <button
-            onClick={() => { localStorage.removeItem('acamellar_auth'); setAuthed(false); }}
-            className="text-ocean-300 hover:text-white text-xs transition-colors"
-          >
-            Sign out
-          </button>
+          <div className="flex items-center gap-3">
+            {user && (
+              <span className="hidden sm:inline text-ocean-200 text-xs">{user.name || user.email}</span>
+            )}
+            <a
+              href="/logout"
+              className="text-ocean-300 hover:text-white text-xs transition-colors"
+            >
+              Sign out
+            </a>
+          </div>
         </div>
       </header>
 

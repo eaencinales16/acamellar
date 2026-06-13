@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const cron = require('node-cron');
+const { auth } = require('express-openid-connect');
 const db = require('./db');
 const { sendAccountabilityDigest, sendReminder } = require('./services/email');
 
@@ -10,18 +11,48 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-// Routes
-app.use('/api/applications', require('./routes/applications'));
-app.use('/api/applications/:id/chat', require('./routes/chat'));
-app.use('/api/chat', require('./routes/generalChat'));
-app.use('/api/connections', require('./routes/connections'));
-app.use('/api/reminders', require('./routes/reminders'));
-app.use('/api/profile', require('./routes/profile'));
-app.use('/api/style-examples', require('./routes/styleExamples'));
-app.use('/api/goals', require('./routes/goals'));
+// --- Auth0 authentication ---
+// Adds /login, /logout, and /callback routes plus an encrypted session cookie.
+// authRequired:false so static files & the landing page still load; the API
+// data routes are guarded individually by requireAuth below.
+app.use(auth({
+  authRequired: false,
+  auth0Logout: true,
+  baseURL: process.env.BASE_URL,
+  issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
+  clientID: process.env.AUTH0_CLIENT_ID,
+  clientSecret: process.env.AUTH0_CLIENT_SECRET,
+  secret: process.env.AUTH0_SECRET,
+  authorizationParams: { response_type: 'code', scope: 'openid profile email' },
+  routes: { postLogoutRedirect: '/' },
+}));
+
+// The frontend polls this to decide whether to show the app or the landing page.
+app.get('/api/me', (req, res) => {
+  if (req.oidc && req.oidc.isAuthenticated()) {
+    return res.json({ authenticated: true, user: req.oidc.user });
+  }
+  res.status(401).json({ authenticated: false });
+});
+
+// Gate for data routes — returns 401 JSON (not an HTML redirect) so fetch() can handle it.
+function requireAuth(req, res, next) {
+  if (req.oidc && req.oidc.isAuthenticated()) return next();
+  res.status(401).json({ error: 'unauthorized' });
+}
+
+// Protected API routes
+app.use('/api/applications', requireAuth, require('./routes/applications'));
+app.use('/api/applications/:id/chat', requireAuth, require('./routes/chat'));
+app.use('/api/chat', requireAuth, require('./routes/generalChat'));
+app.use('/api/connections', requireAuth, require('./routes/connections'));
+app.use('/api/reminders', requireAuth, require('./routes/reminders'));
+app.use('/api/profile', requireAuth, require('./routes/profile'));
+app.use('/api/style-examples', requireAuth, require('./routes/styleExamples'));
+app.use('/api/goals', requireAuth, require('./routes/goals'));
 
 // Stats endpoint for dashboard
-app.get('/api/stats', (req, res) => {
+app.get('/api/stats', requireAuth, (req, res) => {
   const total = db.prepare('SELECT COUNT(*) as count FROM applications').get().count;
   const byStatus = db.prepare("SELECT status, COUNT(*) as count FROM applications GROUP BY status").all();
   const connections = db.prepare('SELECT COUNT(*) as count FROM connections').get().count;
