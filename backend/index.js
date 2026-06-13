@@ -17,6 +17,7 @@ app.use('/api/chat', require('./routes/generalChat'));
 app.use('/api/connections', require('./routes/connections'));
 app.use('/api/reminders', require('./routes/reminders'));
 app.use('/api/profile', require('./routes/profile'));
+app.use('/api/style-examples', require('./routes/styleExamples'));
 
 // Stats endpoint for dashboard
 app.get('/api/stats', (req, res) => {

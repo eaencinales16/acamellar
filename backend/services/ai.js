@@ -5,11 +5,26 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// Shared persona — every AI surface evaluates and writes through this lens.
+const RECRUITER_PERSONA = `You are a seasoned senior recruiter and hiring manager at a Fortune 500 company with 15+ years of experience screening candidates and running interview loops. You know exactly what makes a resume survive ATS keyword filters and a 6-second human skim, what makes a hiring committee say yes, and where candidates undersell themselves. You are direct, strategic, and hold the candidate to the bar a top-tier company actually uses — while being encouraging and constructive.`;
+
+// Build a "voice" instruction block from the user's saved style preferences + sample docs.
+function buildVoiceContext(writingStyle, examples = []) {
+  let out = '';
+  if (writingStyle && writingStyle.trim()) {
+    out += `\n\nCANDIDATE'S WRITING STYLE & PREFERENCES (match this voice):\n${writingStyle.trim()}`;
+  }
+  if (examples && examples.length) {
+    out += `\n\nSAMPLE DOCUMENTS THE CANDIDATE WROTE (mirror this tone, structure, and phrasing — this is their authentic voice):`;
+    examples.forEach((ex, i) => {
+      out += `\n\n--- EXAMPLE ${i + 1}${ex.label ? ` (${ex.label})` : ''} ---\n${ex.content}`;
+    });
+  }
+  return out;
+}
+
 async function callClaude(systemPrompt, userMessage, conversationHistory = []) {
-  const messages = [
-    ...conversationHistory,
-    { role: 'user', content: userMessage }
-  ];
+  const messages = [...conversationHistory, { role: 'user', content: userMessage }];
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 4096,
@@ -35,29 +50,39 @@ async function callAI(systemPrompt, userMessage, conversationHistory = []) {
   }
 }
 
-async function tailorResume(resume, jobListing, company, position) {
-  const system = `You are an expert resume writer and career coach. Your job is to tailor resumes to specific job listings, highlighting the most relevant experience and skills while keeping all information truthful. Format the resume in clean plain text suitable for copy-pasting or PDF conversion.`;
-  const prompt = `Please tailor the following resume for the ${position} role at ${company}.
+async function tailorResume(resume, jobListing, company, position, opts = {}) {
+  const { writingStyle, examples } = opts;
+  const system = `${RECRUITER_PERSONA}
+
+Your task: rewrite the candidate's resume so that, if it landed on your desk for the ${position} role at ${company}, it would make your shortlist. Keep every fact truthful — reframe and reprioritize, never fabricate. Output clean plain text suitable for copy-paste or PDF.${buildVoiceContext(writingStyle, examples)}`;
+
+  const prompt = `Tailor this resume for the ${position} role at ${company}.
 
 JOB LISTING:
 ${jobListing}
 
-ORIGINAL RESUME:
+CURRENT RESUME:
 ${resume}
 
-Provide a tailored resume that:
-1. Reorders and emphasizes experiences most relevant to this role
-2. Uses keywords from the job listing naturally
-3. Adjusts the professional summary/objective to match the role
-4. Keeps all facts truthful — only reframe, don't fabricate
-5. Is formatted cleanly in plain text`;
+As the recruiter for this req, produce a tailored resume that:
+1. Leads with the experience and impact most relevant to THIS role
+2. Mirrors the job listing's keywords and competencies naturally (so it clears ATS)
+3. Rewrites bullet points to be outcome- and metric-driven (action verb + what + quantified result)
+4. Cuts or de-emphasizes anything irrelevant to this role
+5. Has a punchy professional summary targeted to this exact position
+6. Keeps every claim truthful — only reframe what's already there
+Return only the tailored resume in clean plain text.`;
 
   return callAI(system, prompt);
 }
 
-async function generateCoverLetter(resume, jobListing, company, position, userName) {
-  const system = `You are an expert cover letter writer. Write compelling, personalized cover letters that connect the candidate's experience to the specific role. Avoid generic phrases. Sound human and enthusiastic.`;
-  const prompt = `Write a cover letter for ${userName || 'the candidate'} applying for ${position} at ${company}.
+async function generateCoverLetter(resume, jobListing, company, position, userName, opts = {}) {
+  const { writingStyle, examples } = opts;
+  const system = `${RECRUITER_PERSONA}
+
+Your task: write a cover letter for this candidate that would genuinely move you to advance them for the ${position} role at ${company}. You know generic letters get discarded in seconds — make it specific, confident, and human.${buildVoiceContext(writingStyle, examples)}`;
+
+  const prompt = `Write a cover letter for ${userName || 'the candidate'} applying to ${position} at ${company}.
 
 JOB LISTING:
 ${jobListing}
@@ -65,41 +90,43 @@ ${jobListing}
 CANDIDATE RESUME:
 ${resume}
 
-Write a 3-4 paragraph cover letter that:
-1. Opens with a specific hook related to the company or role
-2. Connects 2-3 key experiences to the job requirements
-3. Shows enthusiasm for this specific company
-4. Closes with a clear call to action
-Format as a proper business letter.`;
+As the recruiter for this req, write a 3-4 paragraph letter that:
+1. Opens with a specific hook tied to ${company} or the role (no "I am writing to apply for...")
+2. Connects 2-3 concrete, quantified accomplishments to the job's top requirements
+3. Shows genuine, researched enthusiasm for THIS company specifically
+4. Closes with a confident, forward-looking call to action
+Format as a proper business letter. Match the candidate's authentic voice.`;
 
   return callAI(system, prompt);
 }
 
-async function chatAboutJob(jobListing, company, position, resume, conversationHistory, userMessage) {
-  const system = `You are a career coach and interview prep expert helping a job seeker who is applying for ${position} at ${company}. You have access to their resume and the job listing. Be specific, practical, and encouraging. Help them prepare for interviews, understand the role, research the company, and strategize their application.
+async function chatAboutJob(jobListing, company, position, resume, conversationHistory, userMessage, opts = {}) {
+  const { writingStyle, examples } = opts;
+  const system = `${RECRUITER_PERSONA}
+
+You are now coaching this candidate on the ${position} role at ${company} — giving them the inside view a Fortune 500 recruiter has but rarely shares. Help with interview prep, what the hiring committee actually weighs, how to frame their experience, salary/negotiation, and red/green flags. Be specific and candid; reference their resume and the listing.
 
 JOB LISTING:
 ${jobListing || 'Not provided'}
 
 CANDIDATE RESUME:
-${resume || 'Not provided'}`;
+${resume || 'Not provided'}${buildVoiceContext(writingStyle, examples)}`;
 
-  const history = conversationHistory.map(m => ({
-    role: m.role,
-    content: m.content
-  }));
-
+  const history = conversationHistory.map(m => ({ role: m.role, content: m.content }));
   return callAI(system, userMessage, history);
 }
 
-async function chatGeneral(profile, jobSearchContext, conversationHistory, userMessage) {
-  const system = `You are A Camellar — a sharp, motivating career coach and accountability partner for an aggressive job search. You are talking with ${profile?.name || 'the job seeker'} from their dashboard. Be specific, practical, warm, and a little tough when they need a push. Help with strategy, prioritization, motivation, interview prep, networking, and keeping momentum. Reference their actual job search data when relevant, and proactively hold them accountable to consistent progress.
+async function chatGeneral(profile, jobSearchContext, conversationHistory, userMessage, opts = {}) {
+  const { examples } = opts;
+  const system = `${RECRUITER_PERSONA}
+
+You are ${profile?.name || 'the job seeker'}'s personal recruiting strategist and accountability partner, talking with them from their dashboard. Bring the Fortune 500 recruiter lens to everything: what hiring teams actually look for, how to prioritize their pipeline, where they're leaving opportunities on the table, and how to keep aggressive momentum. Be specific, candid, and motivating. Use their real job-search data below.
 
 CURRENT JOB SEARCH SNAPSHOT:
 ${jobSearchContext}
 
 CANDIDATE RESUME:
-${profile?.resume || 'Not provided yet — encourage them to add it in Profile.'}
+${profile?.resume || 'Not provided yet — push them to add it in Profile.'}${profile?.writing_style ? `\n\nCANDIDATE'S WRITING STYLE:\n${profile.writing_style}` : ''}${buildVoiceContext(null, examples)}
 
 Keep responses focused and actionable. Use markdown for structure when helpful.`;
 

@@ -61,8 +61,10 @@ router.post('/:id/tailor-resume', async (req, res) => {
   const profile = db.prepare('SELECT * FROM user_profile WHERE id = 1').get();
   if (!profile?.resume) return res.status(400).json({ error: 'Add your base resume in Profile first' });
 
+  const examples = db.prepare("SELECT label, content FROM style_examples WHERE doc_type = 'resume' ORDER BY created_at DESC LIMIT 2").all();
+
   try {
-    const tailored = await tailorResume(profile.resume, app.job_listing, app.company, app.position);
+    const tailored = await tailorResume(profile.resume, app.job_listing, app.company, app.position, { writingStyle: profile.writing_style, examples });
     db.prepare("UPDATE applications SET tailored_resume = ?, updated_at = datetime('now') WHERE id = ?")
       .run(tailored, req.params.id);
     res.json({ tailored_resume: tailored });
@@ -79,8 +81,10 @@ router.post('/:id/cover-letter', async (req, res) => {
   const profile = db.prepare('SELECT * FROM user_profile WHERE id = 1').get();
   if (!profile?.resume) return res.status(400).json({ error: 'Add your base resume in Profile first' });
 
+  const examples = db.prepare("SELECT label, content FROM style_examples WHERE doc_type = 'cover_letter' ORDER BY created_at DESC LIMIT 2").all();
+
   try {
-    const letter = await generateCoverLetter(profile.resume, app.job_listing, app.company, app.position, profile.name);
+    const letter = await generateCoverLetter(profile.resume, app.job_listing, app.company, app.position, profile.name, { writingStyle: profile.writing_style, examples });
     db.prepare("UPDATE applications SET cover_letter = ?, updated_at = datetime('now') WHERE id = ?")
       .run(letter, req.params.id);
     res.json({ cover_letter: letter });

@@ -74,6 +74,27 @@ db.exec(`
     sent_at TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   );
+
+  -- Saved "this is my voice" sample documents used to teach Claude the user's style.
+  -- doc_type: 'resume' | 'cover_letter'
+  CREATE TABLE IF NOT EXISTS style_examples (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    doc_type TEXT NOT NULL,
+    label TEXT,
+    content TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
+
+// --- Lightweight migrations for already-deployed databases ---
+// Add a column only if it doesn't already exist (SQLite has no ADD COLUMN IF NOT EXISTS).
+function addColumnIfMissing(table, column, definition) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!cols.some(c => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
+addColumnIfMissing('user_profile', 'writing_style', 'TEXT');
 
 module.exports = db;

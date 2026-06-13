@@ -21,7 +21,7 @@ router.post('/', async (req, res) => {
   db.prepare('INSERT INTO chat_messages (application_id, role, content) VALUES (?, ?, ?)').run(req.params.id, 'user', message);
 
   try {
-    const reply = await chatAboutJob(app.job_listing, app.company, app.position, profile?.resume, history, message);
+    const reply = await chatAboutJob(app.job_listing, app.company, app.position, profile?.resume, history, message, { writingStyle: profile?.writing_style });
     db.prepare('INSERT INTO chat_messages (application_id, role, content) VALUES (?, ?, ?)').run(req.params.id, 'assistant', reply);
     res.json({ reply });
   } catch (err) {

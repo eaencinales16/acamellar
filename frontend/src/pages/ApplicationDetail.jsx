@@ -88,6 +88,15 @@ export default function ApplicationDetail() {
     setShowConnForm(false); loadConns();
   };
 
+  const teachVoice = async (docType, content) => {
+    if (!content) return;
+    await fetch('/api/style-examples', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ doc_type: docType, label: `${app.position} @ ${app.company}`, content })
+    });
+    alert('Saved as a voice sample! Future drafts will sound more like this.');
+  };
+
   const toggleOutreach = async conn => {
     await fetch(`/api/connections/${conn.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reached_out: conn.reached_out ? 0 : 1, outreach_date: conn.reached_out ? null : new Date().toISOString().split('T')[0] }) });
@@ -166,9 +175,10 @@ export default function ApplicationDetail() {
           {app.tailored_resume ? (
             <>
               <textarea value={form.tailored_resume || ''} onChange={e => setForm(f => ({ ...f, tailored_resume: e.target.value }))} rows={28} className="input font-mono text-xs" />
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <button onClick={save} className="btn-primary text-sm py-2.5">Save</button>
                 <button onClick={() => { navigator.clipboard.writeText(app.tailored_resume); alert('Copied!'); }} className="btn-secondary text-sm py-2.5">Copy</button>
+                <button onClick={() => teachVoice('resume', form.tailored_resume)} className="text-sm py-2.5 px-4 border border-seafoam-300 text-seafoam-700 rounded-xl hover:bg-seafoam-50 transition-colors">🗣️ Teach my voice</button>
               </div>
             </>
           ) : (
@@ -193,9 +203,10 @@ export default function ApplicationDetail() {
           {app.cover_letter ? (
             <>
               <textarea value={form.cover_letter || ''} onChange={e => setForm(f => ({ ...f, cover_letter: e.target.value }))} rows={24} className="input text-sm" />
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <button onClick={save} className="btn-primary text-sm py-2.5">Save</button>
                 <button onClick={() => { navigator.clipboard.writeText(app.cover_letter); alert('Copied!'); }} className="btn-secondary text-sm py-2.5">Copy</button>
+                <button onClick={() => teachVoice('cover_letter', form.cover_letter)} className="text-sm py-2.5 px-4 border border-seafoam-300 text-seafoam-700 rounded-xl hover:bg-seafoam-50 transition-colors">🗣️ Teach my voice</button>
               </div>
             </>
           ) : (
