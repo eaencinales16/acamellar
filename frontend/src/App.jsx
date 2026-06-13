@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Applications from './pages/Applications';
 import ApplicationDetail from './pages/ApplicationDetail';
 import Connections from './pages/Connections';
+import Goals from './pages/Goals';
 import Reminders from './pages/Reminders';
 import Profile from './pages/Profile';
 
@@ -12,6 +13,7 @@ const NAV = [
   { to: '/',            label: '🏠 Dashboard',    exact: true },
   { to: '/applications', label: '📋 Applications' },
   { to: '/connections',  label: '🤝 Connections'  },
+  { to: '/goals',        label: '🎯 Goals'        },
   { to: '/reminders',    label: '⏰ Reminders'    },
   { to: '/profile',      label: '👤 Profile'      },
 ];
@@ -69,6 +71,7 @@ export default function App() {
           <Route path="/applications"    element={<Applications />} />
           <Route path="/applications/:id" element={<ApplicationDetail />} />
           <Route path="/connections"     element={<Connections />} />
+          <Route path="/goals"           element={<Goals />} />
           <Route path="/reminders"       element={<Reminders />} />
           <Route path="/profile"         element={<Profile />} />
         </Routes>

@@ -18,6 +18,7 @@ app.use('/api/connections', require('./routes/connections'));
 app.use('/api/reminders', require('./routes/reminders'));
 app.use('/api/profile', require('./routes/profile'));
 app.use('/api/style-examples', require('./routes/styleExamples'));
+app.use('/api/goals', require('./routes/goals'));
 
 // Stats endpoint for dashboard
 app.get('/api/stats', (req, res) => {

@@ -75,6 +75,18 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now'))
   );
 
+  -- Weekly accountability goals. week_start is the Monday (YYYY-MM-DD) of the week.
+  -- Progress is computed live from applications.applied_date and connections.outreach_date.
+  CREATE TABLE IF NOT EXISTS weekly_goals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    week_start TEXT NOT NULL UNIQUE,
+    applications_target INTEGER DEFAULT 0,
+    connections_target INTEGER DEFAULT 0,
+    notes TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
   -- Saved "this is my voice" sample documents used to teach Claude the user's style.
   -- doc_type: 'resume' | 'cover_letter'
   CREATE TABLE IF NOT EXISTS style_examples (

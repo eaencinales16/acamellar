@@ -96,6 +96,63 @@ function CoachChat() {
   );
 }
 
+function mondayOf(d) {
+  const date = new Date(d);
+  const day = (date.getDay() + 6) % 7;
+  date.setDate(date.getDate() - day);
+  return date.toISOString().split('T')[0];
+}
+
+function WeeklyGoalStrip() {
+  const [goal, setGoal] = useState(null);
+  useEffect(() => {
+    fetch(`/api/goals/week?week_start=${mondayOf(new Date())}`).then(r => r.json()).then(setGoal);
+  }, []);
+  if (!goal || (!goal.applications_target && !goal.connections_target)) {
+    return (
+      <Link to="/goals" className="block bg-gradient-to-r from-ocean-50 to-seafoam-50 border border-ocean-100 rounded-2xl p-4 hover:shadow-sm transition-shadow">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🎯</span>
+          <div>
+            <p className="font-semibold text-ocean-800">Set your weekly goals</p>
+            <p className="text-ocean-600 text-sm">Commit to a target for applications and outreach this week →</p>
+          </div>
+        </div>
+      </Link>
+    );
+  }
+  const bar = (done, target, color) => {
+    const pct = target > 0 ? Math.min(100, Math.round((done / target) * 100)) : 0;
+    return (
+      <div className="flex-1">
+        <div className="h-2.5 bg-sand-100 rounded-full overflow-hidden">
+          <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+    );
+  };
+  return (
+    <Link to="/goals" className="block card p-4 hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-semibold text-ocean-800 flex items-center gap-2">🎯 This Week's Goals</h2>
+        <span className="text-ocean-500 text-sm">Manage →</span>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-sand-500 w-24 shrink-0">📋 Applications</span>
+          {bar(goal.applications_done, goal.applications_target, 'bg-ocean-500')}
+          <span className="text-sm font-bold text-ocean-800 w-12 text-right">{goal.applications_done}/{goal.applications_target || '—'}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-sand-500 w-24 shrink-0">🤝 Contacted</span>
+          {bar(goal.connections_done, goal.connections_target, 'bg-seafoam-500')}
+          <span className="text-sm font-bold text-ocean-800 w-12 text-right">{goal.connections_done}/{goal.connections_target || '—'}</span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
 
@@ -153,6 +210,9 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Weekly goals */}
+      <WeeklyGoalStrip />
 
       {/* Coach chat */}
       <CoachChat />
