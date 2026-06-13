@@ -11,6 +11,7 @@ const FEATURES = [
 
 export default function Landing() {
   const login = () => { window.location.href = '/login'; };
+  const signup = () => { window.location.href = '/signup'; };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -59,15 +60,35 @@ export default function Landing() {
             AI-powered job search tracker with tailored resumes, cover letters, a built-in career coach, and the accountability reminders to keep you relentlessly moving forward.
           </p>
 
-          {/* Login */}
+          {/* Login card */}
           <div className="animate-fade-up w-full max-w-sm" style={{ animationDelay: '0.4s' }}>
-            <button
-              onClick={login}
-              className="w-full bg-seafoam-500 hover:bg-seafoam-400 text-white font-semibold py-4 rounded-2xl transition-all duration-200 shadow-2xl hover:shadow-seafoam-500/30 active:scale-95 text-lg"
-            >
-              Log In →
-            </button>
-            <p className="text-ocean-200 text-xs mt-3">Secure login powered by Auth0</p>
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-7 shadow-2xl">
+              <div className="text-4xl mb-2">🐪</div>
+              <h2 className="text-white font-display text-2xl font-bold mb-1">Welcome back</h2>
+              <p className="text-ocean-100 text-sm mb-6">Sign in to your job search command center</p>
+
+              <button
+                onClick={login}
+                className="w-full bg-seafoam-500 hover:bg-seafoam-400 text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-lg hover:shadow-seafoam-500/30 active:scale-95 text-base mb-3"
+              >
+                Log In →
+              </button>
+              <button
+                onClick={signup}
+                className="w-full bg-white/10 hover:bg-white/20 border border-white/25 text-white font-semibold py-3.5 rounded-xl transition-all duration-200 active:scale-95 text-base"
+              >
+                Create an account
+              </button>
+
+              <div className="flex items-center gap-3 my-5">
+                <div className="flex-1 h-px bg-white/15" />
+                <span className="text-ocean-200 text-xs">secure login by Auth0</span>
+                <div className="flex-1 h-px bg-white/15" />
+              </div>
+              <p className="text-ocean-200/80 text-xs leading-relaxed">
+                Sign in with email & password or your Google account — whichever you've enabled. Your credentials are handled by Auth0 and never stored by this app.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -98,12 +119,20 @@ export default function Landing() {
           <div className="text-5xl mb-4">🐪</div>
           <h2 className="font-display text-3xl font-bold text-white mb-4">Ready to take charge of your search?</h2>
           <p className="text-ocean-100 mb-8">The ocean is patient. Your job search shouldn't be.</p>
-          <button
-            onClick={login}
-            className="bg-white text-ocean-700 font-bold px-8 py-3.5 rounded-xl hover:bg-sand-50 transition-all active:scale-95 shadow-lg text-lg"
-          >
-            Log In to Get Started →
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={signup}
+              className="bg-white text-ocean-700 font-bold px-8 py-3.5 rounded-xl hover:bg-sand-50 transition-all active:scale-95 shadow-lg text-lg"
+            >
+              Create an Account →
+            </button>
+            <button
+              onClick={login}
+              className="bg-ocean-800/40 backdrop-blur-sm border border-white/30 text-white font-bold px-8 py-3.5 rounded-xl hover:bg-ocean-800/60 transition-all active:scale-95 text-lg"
+            >
+              Log In
+            </button>
+          </div>
         </div>
       </section>
 

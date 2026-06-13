@@ -27,6 +27,14 @@ app.use(auth({
   routes: { postLogoutRedirect: '/' },
 }));
 
+// Sign-up: same Auth0 Universal Login, but opens straight on the registration screen.
+app.get('/signup', (req, res) => {
+  res.oidc.login({
+    returnTo: '/',
+    authorizationParams: { response_type: 'code', scope: 'openid profile email', screen_hint: 'signup' },
+  });
+});
+
 // The frontend polls this to decide whether to show the app or the landing page.
 app.get('/api/me', (req, res) => {
   if (req.oidc && req.oidc.isAuthenticated()) {

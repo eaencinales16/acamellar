@@ -7,6 +7,7 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:3001',
       '/login': 'http://localhost:3001',
+      '/signup': 'http://localhost:3001',
       '/logout': 'http://localhost:3001',
       '/callback': 'http://localhost:3001'
     }
