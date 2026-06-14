@@ -206,7 +206,7 @@ export default function Dashboard() {
       {/* Page header */}
       <div>
         <h1 className="font-display text-3xl font-bold text-ocean-800">Your Dashboard</h1>
-        <p className="text-sand-500 mt-1">Stay aggressive. Stay consistent. The tide turns for those who keep swimming. 🐪</p>
+        <p className="text-sand-500 mt-1">Show up and put in the work. Steady steps get the camel across the desert. 🐪</p>
       </div>
 
       {/* Stat cards */}
@@ -230,7 +230,7 @@ export default function Dashboard() {
           <span className="text-2xl mt-0.5">⚠️</span>
           <div>
             <p className="font-semibold text-ocean-800">Time to pick up the pace!</p>
-            <p className="text-ocean-600 text-sm mt-0.5">Aim for at least 5 applications this week. The ocean rewards those who dive in. <Link to="/applications" className="underline font-medium">+ Add one now</Link></p>
+            <p className="text-ocean-600 text-sm mt-0.5">Aim for at least 5 applications this week — a camel covers ground by keeping at it. <Link to="/applications" className="underline font-medium">+ Add one now</Link></p>
           </div>
         </div>
       )}

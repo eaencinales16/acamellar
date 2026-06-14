@@ -6,7 +6,7 @@ const FEATURES = [
   { icon: '📝', title: 'Custom Cover Letters', desc: 'Personalized, non-generic cover letters generated for each role.' },
   { icon: '💬', title: 'In-App Career Coach', desc: 'Chat with Claude about interview prep, salary negotiation, and strategy.' },
   { icon: '🤝', title: 'Connections Tracker', desc: 'Track every contact at every company and your outreach progress.' },
-  { icon: '📧', title: 'Accountability Partner', desc: 'Daily digest emails and custom reminders to keep your search aggressive.' },
+  { icon: '📧', title: 'Accountability Partner', desc: 'Daily digests and reminders that keep you working — no resting in the shade.' },
 ];
 
 export default function Landing() {
@@ -47,17 +47,20 @@ export default function Landing() {
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 pb-32">
           <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
             <span className="inline-block bg-white/15 backdrop-blur-sm text-seafoam-200 text-xs font-semibold tracking-widest uppercase px-4 py-2 rounded-full mb-6 border border-white/20">
-              Your Personal Job Search Command Center
+              🐪 Time to Camellar
             </span>
           </div>
 
           <h1 className="animate-fade-up font-display text-5xl md:text-7xl font-bold text-white leading-tight mb-6 max-w-4xl" style={{ animationDelay: '0.2s' }}>
-            Navigate Your Career
-            <span className="block text-ocean-200 italic"> Like the Tides</span>
+            Put Your Job Search
+            <span className="block text-ocean-200 italic"> to Work</span>
           </h1>
 
-          <p className="animate-fade-up text-ocean-100 text-lg md:text-xl max-w-2xl leading-relaxed mb-12" style={{ animationDelay: '0.3s' }}>
-            AI-powered job search tracker with tailored resumes, cover letters, a built-in career coach, and the accountability reminders to keep you relentlessly moving forward.
+          <p className="animate-fade-up text-ocean-100 text-lg md:text-xl max-w-2xl leading-relaxed mb-4" style={{ animationDelay: '0.3s' }}>
+            <em>Camellar</em> — Colombian for "to get to work," from <em>camello</em>, the camel. This is your workhorse: AI-tailored resumes and cover letters, a built-in career coach, and the accountability to keep you putting in the work, day after day.
+          </p>
+          <p className="animate-fade-up text-seafoam-200 text-sm font-medium mb-10" style={{ animationDelay: '0.35s' }}>
+            Steady, strong, and built for the long haul — just like a camel. 🐪
           </p>
 
           {/* Login card */}
@@ -65,7 +68,7 @@ export default function Landing() {
             <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-7 shadow-2xl">
               <div className="text-4xl mb-2">🐪</div>
               <h2 className="text-white font-display text-2xl font-bold mb-1">Welcome back</h2>
-              <p className="text-ocean-100 text-sm mb-6">Sign in to your job search command center</p>
+              <p className="text-ocean-100 text-sm mb-6">Sign in and let's get to work 🐪</p>
 
               <button
                 onClick={login}
@@ -97,8 +100,8 @@ export default function Landing() {
       <section className="bg-sand-50 py-24 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="font-display text-4xl font-bold text-ocean-800 mb-4">Everything you need to land the role</h2>
-            <p className="text-sand-600 text-lg max-w-xl mx-auto">Built for the serious job seeker who refuses to drift — every feature designed to keep you focused and moving.</p>
+            <h2 className="font-display text-4xl font-bold text-ocean-800 mb-4">Everything you need to land the camello</h2>
+            <p className="text-sand-600 text-lg max-w-xl mx-auto">Built to do the heavy lifting of your job hunt, so you can keep putting one hoof in front of the other. <span className="text-sand-400">(<em>camello</em> = the job)</span></p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -113,12 +116,12 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Coastal CTA */}
+      {/* CTA */}
       <section className="bg-wave-gradient py-20 px-6 text-center">
         <div className="max-w-2xl mx-auto">
           <div className="text-5xl mb-4">🐪</div>
-          <h2 className="font-display text-3xl font-bold text-white mb-4">Ready to take charge of your search?</h2>
-          <p className="text-ocean-100 mb-8">The ocean is patient. Your job search shouldn't be.</p>
+          <h2 className="font-display text-3xl font-bold text-white mb-4">Ready to camellar?</h2>
+          <p className="text-ocean-100 mb-8">Slow and steady covers the most ground. Time to get to work.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               onClick={signup}
@@ -142,7 +145,7 @@ export default function Landing() {
           <span>🐪</span>
           <span className="font-display text-white font-semibold">A Camellar</span>
         </div>
-        <p>Powered by Claude AI · Built for the relentless job seeker</p>
+        <p>Powered by Claude AI · Built for those ready to camellar 🐪</p>
       </footer>
     </div>
   );

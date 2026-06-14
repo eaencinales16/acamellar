@@ -31,8 +31,8 @@ async function sendReminder(to, title, message, applicationInfo) {
       <p>${message}</p>
       ${appSection}
       <hr style="margin: 20px 0;" />
-      <p style="color: #6b7280; font-size: 14px;">Keep pushing forward — every application brings you closer. You've got this!</p>
-      <p style="color: #6b7280; font-size: 12px;">From your accountability partner, A Camellar</p>
+      <p style="color: #6b7280; font-size: 14px;">Time to camellar — one steady step at a time gets the camel across the desert. 🐪</p>
+      <p style="color: #6b7280; font-size: 12px;">From your work buddy, A Camellar</p>
     </div>
   `;
 
@@ -42,8 +42,8 @@ async function sendReminder(to, title, message, applicationInfo) {
 async function sendAccountabilityDigest(to, userName, stats) {
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #d97706;">🐪 Your Job Search Daily Digest</h2>
-      <p>Hey ${userName || 'there'}! Here's where your search stands:</p>
+      <h2 style="color: #d97706;">🐪 Time to Camellar — Your Daily Digest</h2>
+      <p>Hey ${userName || 'there'}! Saddle up — here's where your search stands:</p>
       <div style="background: #fef3c7; padding: 16px; border-radius: 8px; margin: 16px 0;">
         <p><strong>📋 Total Applications:</strong> ${stats.total}</p>
         <p><strong>✅ Applied:</strong> ${stats.applied}</p>
@@ -51,13 +51,13 @@ async function sendAccountabilityDigest(to, userName, stats) {
         <p><strong>🤝 Connections Made:</strong> ${stats.connections}</p>
         <p><strong>📬 Pending Outreach:</strong> ${stats.pendingOutreach}</p>
       </div>
-      ${stats.total < 5 ? '<p style="color: #dc2626;"><strong>⚠️ Time to pick up the pace! Aim for at least 5 applications this week.</strong></p>' : ''}
-      <p>Keep going — consistency is how you land the role!</p>
-      <p style="color: #6b7280; font-size: 12px;">From your accountability partner, A Camellar</p>
+      ${stats.total < 5 ? '<p style="color: #dc2626;"><strong>⚠️ Pick up the pace! Aim for at least 5 applications this week.</strong></p>' : ''}
+      <p>Keep at it — a camel covers ground by never quitting the trek. 🐪</p>
+      <p style="color: #6b7280; font-size: 12px;">From your work buddy, A Camellar</p>
     </div>
   `;
 
-  return sendEmail(to, '🐪 Your Daily Job Search Digest', html);
+  return sendEmail(to, '🐪 Time to Camellar — Your Daily Digest', html);
 }
 
 module.exports = { sendEmail, sendReminder, sendAccountabilityDigest };
