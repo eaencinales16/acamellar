@@ -134,4 +134,27 @@ Keep responses focused and actionable. Use markdown for structure when helpful.`
   return callAI(system, userMessage, history);
 }
 
-module.exports = { tailorResume, generateCoverLetter, chatAboutJob, chatGeneral, callAI };
+// Parse a raw job-posting page (text extracted from a URL) into structured fields.
+async function extractJob(pageText, url) {
+  const system = `You extract structured job-posting data from messy scraped web page text. Return ONLY valid JSON, no markdown fences, no commentary.`;
+  const prompt = `From the job posting page text below, extract these fields and return ONLY a JSON object:
+{
+  "company": "the hiring company name",
+  "position": "the job title",
+  "location": "location if stated, else empty string",
+  "job_listing": "the full, cleaned job description — responsibilities, requirements, qualifications, etc., as readable plain text with line breaks. Strip navigation, ads, cookie notices, and unrelated boilerplate."
+}
+
+If a field can't be found, use an empty string. Source URL: ${url}
+
+PAGE TEXT:
+${pageText.slice(0, 20000)}`;
+
+  const raw = await callAI(system, prompt);
+  // Be tolerant of code fences or stray prose around the JSON.
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('Could not parse the job posting');
+  return JSON.parse(match[0]);
+}
+
+module.exports = { tailorResume, generateCoverLetter, chatAboutJob, chatGeneral, extractJob, callAI };

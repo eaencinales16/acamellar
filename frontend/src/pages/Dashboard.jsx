@@ -153,6 +153,30 @@ function WeeklyGoalStrip() {
   );
 }
 
+function UpcomingInterviews() {
+  const [interviews, setInterviews] = useState([]);
+  useEffect(() => {
+    fetch('/api/interviews?upcoming=1').then(r => r.json()).then(setInterviews);
+  }, []);
+  if (!interviews.length) return null;
+  return (
+    <div className="card p-5">
+      <h2 className="font-semibold text-ocean-800 mb-3 flex items-center gap-2">🗓️ Upcoming Interviews</h2>
+      <ul className="divide-y divide-sand-100">
+        {interviews.map(iv => (
+          <li key={iv.id} className="py-3 flex items-center justify-between gap-3">
+            <Link to={`/applications/${iv.application_id}`} className="min-w-0 flex-1 hover:opacity-80">
+              <div className="font-medium text-sm text-ocean-800 truncate">{iv.round || 'Interview'} · {iv.position} @ {iv.company}</div>
+              <div className="text-xs text-ocean-500">{new Date(iv.scheduled_at).toLocaleString()}{iv.format ? ` · ${iv.format}` : ''}</div>
+            </Link>
+            <a href={`/api/interviews/${iv.id}/calendar.ics`} className="text-xs bg-ocean-100 text-ocean-700 hover:bg-ocean-200 px-2.5 py-1 rounded-lg font-medium shrink-0">📆 Calendar</a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
 
@@ -213,6 +237,9 @@ export default function Dashboard() {
 
       {/* Weekly goals */}
       <WeeklyGoalStrip />
+
+      {/* Upcoming interviews */}
+      <UpcomingInterviews />
 
       {/* Coach chat */}
       <CoachChat />

@@ -79,6 +79,7 @@ app.use('/api/reminders', requireAuth, require('./routes/reminders'));
 app.use('/api/profile', requireAuth, require('./routes/profile'));
 app.use('/api/style-examples', requireAuth, require('./routes/styleExamples'));
 app.use('/api/goals', requireAuth, require('./routes/goals'));
+app.use('/api/interviews', requireAuth, require('./routes/interviews'));
 
 // Stats endpoint for dashboard
 app.get('/api/stats', requireAuth, (req, res) => {

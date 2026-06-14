@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import StatusBadge, { STATUSES } from '../components/StatusBadge';
 
-const TABS = ['Overview', 'Job Listing', 'Tailored Resume', 'Cover Letter', 'Chat', 'Connections'];
+const TABS = ['Overview', 'Job Listing', 'Tailored Resume', 'Cover Letter', 'Interviews', 'Chat', 'Connections'];
 
 export default function ApplicationDetail() {
   const { id } = useParams();
@@ -18,13 +18,16 @@ export default function ApplicationDetail() {
   const [connections, setConnections] = useState([]);
   const [connForm, setConnForm] = useState({ name: '', title: '', company: '', linkedin_url: '', email: '', notes: '' });
   const [showConnForm, setShowConnForm] = useState(false);
+  const [interviews, setInterviews] = useState([]);
+  const [ivForm, setIvForm] = useState(null); // null = closed; object = editing/creating
   const chatBottomRef = useRef(null);
 
   const loadApp  = () => fetch(`/api/applications/${id}`).then(r => r.json()).then(d => { setApp(d); setForm(d); });
   const loadChat = () => fetch(`/api/applications/${id}/chat`).then(r => r.json()).then(setChat);
   const loadConns= () => fetch(`/api/connections?application_id=${id}`).then(r => r.json()).then(setConnections);
+  const loadIvs  = () => fetch(`/api/interviews?application_id=${id}`).then(r => r.json()).then(setInterviews);
 
-  useEffect(() => { loadApp(); loadChat(); loadConns(); }, [id]);
+  useEffect(() => { loadApp(); loadChat(); loadConns(); loadIvs(); }, [id]);
   useEffect(() => { chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chat]);
 
   if (!app) return (
@@ -95,6 +98,24 @@ export default function ApplicationDetail() {
       body: JSON.stringify({ doc_type: docType, label: `${app.position} @ ${app.company}`, content })
     });
     alert('Saved as a voice sample! Future drafts will sound more like this.');
+  };
+
+  const EMPTY_IV = { round: '', scheduled_at: '', duration_min: 60, format: 'Video', interviewers: '', location: '', prep_notes: '', outcome: '' };
+  const saveInterview = async e => {
+    e.preventDefault();
+    const body = { ...ivForm, application_id: id };
+    if (ivForm.id) {
+      await fetch(`/api/interviews/${ivForm.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    } else {
+      await fetch('/api/interviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    }
+    setIvForm(null);
+    loadIvs();
+  };
+  const delInterview = async ivId => {
+    if (!confirm('Delete this interview?')) return;
+    await fetch(`/api/interviews/${ivId}`, { method: 'DELETE' });
+    loadIvs();
   };
 
   const toggleOutreach = async conn => {
@@ -178,6 +199,8 @@ export default function ApplicationDetail() {
               <div className="flex gap-3 flex-wrap">
                 <button onClick={save} className="btn-primary text-sm py-2.5">Save</button>
                 <button onClick={() => { navigator.clipboard.writeText(app.tailored_resume); alert('Copied!'); }} className="btn-secondary text-sm py-2.5">Copy</button>
+                <a href={`/api/applications/${id}/export?doc=resume&format=pdf`} className="text-sm py-2.5 px-4 border border-ocean-300 text-ocean-700 rounded-xl hover:bg-ocean-50 transition-colors">⬇ PDF</a>
+                <a href={`/api/applications/${id}/export?doc=resume&format=docx`} className="text-sm py-2.5 px-4 border border-ocean-300 text-ocean-700 rounded-xl hover:bg-ocean-50 transition-colors">⬇ Word</a>
                 <button onClick={() => teachVoice('resume', form.tailored_resume)} className="text-sm py-2.5 px-4 border border-seafoam-300 text-seafoam-700 rounded-xl hover:bg-seafoam-50 transition-colors">🗣️ Teach my voice</button>
               </div>
             </>
@@ -206,6 +229,8 @@ export default function ApplicationDetail() {
               <div className="flex gap-3 flex-wrap">
                 <button onClick={save} className="btn-primary text-sm py-2.5">Save</button>
                 <button onClick={() => { navigator.clipboard.writeText(app.cover_letter); alert('Copied!'); }} className="btn-secondary text-sm py-2.5">Copy</button>
+                <a href={`/api/applications/${id}/export?doc=cover&format=pdf`} className="text-sm py-2.5 px-4 border border-ocean-300 text-ocean-700 rounded-xl hover:bg-ocean-50 transition-colors">⬇ PDF</a>
+                <a href={`/api/applications/${id}/export?doc=cover&format=docx`} className="text-sm py-2.5 px-4 border border-ocean-300 text-ocean-700 rounded-xl hover:bg-ocean-50 transition-colors">⬇ Word</a>
                 <button onClick={() => teachVoice('cover_letter', form.cover_letter)} className="text-sm py-2.5 px-4 border border-seafoam-300 text-seafoam-700 rounded-xl hover:bg-seafoam-50 transition-colors">🗣️ Teach my voice</button>
               </div>
             </>
@@ -214,6 +239,93 @@ export default function ApplicationDetail() {
               <div className="text-5xl mb-3">📝</div>
               <p className="font-medium text-sand-500">No cover letter yet</p>
               <button onClick={genCoverLetter} className="mt-4 bg-seafoam-500 hover:bg-seafoam-600 text-white text-sm px-5 py-2 rounded-xl font-semibold">Generate with AI</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Interviews */}
+      {tab === 'Interviews' && (
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <h2 className="font-semibold text-ocean-800">Interview Rounds</h2>
+            <button onClick={() => setIvForm({ ...EMPTY_IV })} className="btn-primary text-sm py-2 px-4">+ Add Interview</button>
+          </div>
+
+          {ivForm && (
+            <form onSubmit={saveInterview} className="card p-5 space-y-3">
+              <h3 className="font-semibold text-ocean-800">{ivForm.id ? 'Edit' : 'New'} Interview</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-ocean-600 mb-1">Round</label>
+                  <input value={ivForm.round} onChange={e => setIvForm(f => ({ ...f, round: e.target.value }))} placeholder="Phone Screen, Onsite, Final…" className="input" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-ocean-600 mb-1">Date & time</label>
+                  <input type="datetime-local" value={ivForm.scheduled_at || ''} onChange={e => setIvForm(f => ({ ...f, scheduled_at: e.target.value }))} className="input" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-ocean-600 mb-1">Format</label>
+                  <select value={ivForm.format} onChange={e => setIvForm(f => ({ ...f, format: e.target.value }))} className="input">
+                    {['Video', 'Phone', 'Onsite'].map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-ocean-600 mb-1">Duration (min)</label>
+                  <input type="number" min="0" value={ivForm.duration_min} onChange={e => setIvForm(f => ({ ...f, duration_min: e.target.value }))} className="input" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-ocean-600 mb-1">Interviewers</label>
+                  <input value={ivForm.interviewers} onChange={e => setIvForm(f => ({ ...f, interviewers: e.target.value }))} placeholder="Names / titles" className="input" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-ocean-600 mb-1">Location / link</label>
+                  <input value={ivForm.location} onChange={e => setIvForm(f => ({ ...f, location: e.target.value }))} placeholder="Zoom link or address" className="input" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-ocean-600 mb-1">Prep notes</label>
+                  <textarea value={ivForm.prep_notes} onChange={e => setIvForm(f => ({ ...f, prep_notes: e.target.value }))} rows={3} placeholder="Topics to review, questions to ask, STAR stories…" className="input" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-ocean-600 mb-1">Outcome</label>
+                  <input value={ivForm.outcome} onChange={e => setIvForm(f => ({ ...f, outcome: e.target.value }))} placeholder="e.g. Advanced to next round" className="input" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button type="submit" className="btn-primary text-sm py-2">{ivForm.id ? 'Save' : 'Add'}</button>
+                <button type="button" onClick={() => setIvForm(null)} className="btn-secondary text-sm py-2">Cancel</button>
+              </div>
+            </form>
+          )}
+
+          {interviews.length === 0 && !ivForm ? (
+            <div className="text-center py-12 card text-sand-400">
+              <div className="text-4xl mb-2">🗓️</div>
+              <p className="text-sm">No interviews logged yet. Add one when you get scheduled.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {interviews.map(iv => (
+                <div key={iv.id} className="card p-4">
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="flex-1">
+                      <div className="font-semibold text-ocean-800">{iv.round || 'Interview'}{iv.format ? ` · ${iv.format}` : ''}</div>
+                      {iv.scheduled_at && <div className="text-sm text-ocean-500 font-medium">📅 {new Date(iv.scheduled_at).toLocaleString()}</div>}
+                      {iv.interviewers && <div className="text-xs text-sand-500 mt-1">With: {iv.interviewers}</div>}
+                      {iv.location && <div className="text-xs text-sand-500">📍 {iv.location}</div>}
+                      {iv.prep_notes && <div className="text-xs text-sand-500 mt-1 whitespace-pre-wrap">📝 {iv.prep_notes}</div>}
+                      {iv.outcome && <div className="text-xs text-seafoam-600 mt-1 font-medium">✓ {iv.outcome}</div>}
+                    </div>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      {iv.scheduled_at && (
+                        <a href={`/api/interviews/${iv.id}/calendar.ics`} className="text-xs bg-ocean-100 text-ocean-700 hover:bg-ocean-200 px-3 py-1.5 rounded-lg font-medium transition-colors">📆 Add to Calendar</a>
+                      )}
+                      <button onClick={() => setIvForm({ ...iv, scheduled_at: iv.scheduled_at ? iv.scheduled_at.replace(' ', 'T').slice(0, 16) : '' })} className="text-xs text-ocean-500 hover:underline">Edit</button>
+                      <button onClick={() => delInterview(iv.id)} className="text-xs text-coral-400 hover:text-coral-600">Delete</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

@@ -1,11 +1,33 @@
 const express = require('express');
 const router = express.Router();
+const cheerio = require('cheerio');
 const db = require('../db');
-const { tailorResume, generateCoverLetter } = require('../services/ai');
+const { tailorResume, generateCoverLetter, extractJob } = require('../services/ai');
+const { buildPdf, buildDocx } = require('../services/documents');
 
 router.get('/', (req, res) => {
   const apps = db.prepare('SELECT * FROM applications ORDER BY updated_at DESC').all();
   res.json(apps);
+});
+
+// Capture a job posting from a URL: fetch the page, strip to text, AI-extract fields.
+// Returns parsed fields for the frontend to review before saving — does not save.
+router.post('/capture', async (req, res) => {
+  const { url } = req.body;
+  if (!url || !/^https?:\/\//i.test(url)) return res.status(400).json({ error: 'A valid http(s) URL is required' });
+  try {
+    const resp = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ACamellarBot/1.0)' }, redirect: 'follow' });
+    if (!resp.ok) return res.status(422).json({ error: `Couldn't fetch that page (HTTP ${resp.status}). Paste the listing manually instead.` });
+    const html = await resp.text();
+    const $ = cheerio.load(html);
+    $('script, style, noscript, svg, header nav, footer').remove();
+    const pageText = $('body').text().replace(/\s+\n/g, '\n').replace(/\n{3,}/g, '\n\n').replace(/[ \t]{2,}/g, ' ').trim();
+    if (!pageText || pageText.length < 50) return res.status(422).json({ error: "Couldn't read that page (it may require login or JavaScript). Paste the listing manually." });
+    const parsed = await extractJob(pageText, url);
+    res.json({ ...parsed, job_url: url });
+  } catch (err) {
+    res.status(500).json({ error: `Capture failed: ${err.message}. You can paste the listing manually.` });
+  }
 });
 
 router.get('/:id', (req, res) => {
@@ -88,6 +110,36 @@ router.post('/:id/cover-letter', async (req, res) => {
     db.prepare("UPDATE applications SET cover_letter = ?, updated_at = datetime('now') WHERE id = ?")
       .run(letter, req.params.id);
     res.json({ cover_letter: letter });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Download a tailored resume or cover letter as PDF or Word.
+// ?doc=resume|cover &format=pdf|docx
+router.get('/:id/export', async (req, res) => {
+  const { doc = 'resume', format = 'pdf' } = req.query;
+  const app = db.prepare('SELECT * FROM applications WHERE id = ?').get(req.params.id);
+  if (!app) return res.status(404).json({ error: 'Application not found' });
+
+  const isCover = doc === 'cover';
+  const text = isCover ? app.cover_letter : app.tailored_resume;
+  if (!text) return res.status(400).json({ error: `No ${isCover ? 'cover letter' : 'tailored resume'} generated yet` });
+
+  const safe = s => (s || '').replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '');
+  const base = `${isCover ? 'CoverLetter' : 'Resume'}_${safe(app.company)}_${safe(app.position)}`;
+
+  try {
+    if (format === 'docx') {
+      const buf = await buildDocx(text);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename="${base}.docx"`);
+      return res.send(buf);
+    }
+    const buf = await buildPdf(text);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${base}.pdf"`);
+    res.send(buf);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

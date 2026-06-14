@@ -9,6 +9,10 @@ export default function Applications() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [filter, setFilter] = useState('');
+  const [showCapture, setShowCapture] = useState(false);
+  const [captureUrl, setCaptureUrl] = useState('');
+  const [capturing, setCapturing] = useState(false);
+  const [captureError, setCaptureError] = useState('');
   const navigate = useNavigate();
 
   const load = () => fetch('/api/applications').then(r => r.json()).then(setApps);
@@ -23,6 +27,26 @@ export default function Applications() {
     navigate(`/applications/${created.id}`);
   };
 
+  const capture = async e => {
+    e.preventDefault();
+    setCapturing(true);
+    setCaptureError('');
+    try {
+      const res = await fetch('/api/applications/capture', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: captureUrl }) });
+      const data = await res.json();
+      if (!res.ok) { setCaptureError(data.error || 'Capture failed'); return; }
+      // Prefill the new-application form for review before saving.
+      setForm({ ...EMPTY, company: data.company || '', position: data.position || '', job_url: data.job_url || captureUrl, job_listing: data.job_listing || '', notes: data.location ? `Location: ${data.location}` : '' });
+      setShowCapture(false);
+      setCaptureUrl('');
+      setShowForm(true);
+    } catch (err) {
+      setCaptureError('Something went wrong. Paste the listing manually.');
+    } finally {
+      setCapturing(false);
+    }
+  };
+
   const filtered = filter ? apps.filter(a => a.status === filter) : apps;
 
   return (
@@ -32,10 +56,34 @@ export default function Applications() {
           <h1 className="font-display text-3xl font-bold text-ocean-800">Applications</h1>
           <p className="text-sand-500 text-sm mt-0.5">{apps.length} total · {apps.filter(a => ['phone_screen','interview','offer'].includes(a.status)).length} active</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="btn-primary text-sm py-2.5 px-5">
-          + New Application
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => { setCaptureError(''); setShowCapture(true); }} className="btn-secondary text-sm py-2.5 px-4">🔗 Capture from URL</button>
+          <button onClick={() => { setForm(EMPTY); setShowForm(true); }} className="btn-primary text-sm py-2.5 px-5">
+            + New Application
+          </button>
+        </div>
       </div>
+
+      {/* Capture from URL modal */}
+      {showCapture && (
+        <div className="fixed inset-0 bg-ocean-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <form onSubmit={capture} className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="font-display text-xl font-bold text-ocean-800">Capture from URL</h2>
+              <button type="button" onClick={() => setShowCapture(false)} className="text-sand-400 hover:text-sand-600 text-xl leading-none">×</button>
+            </div>
+            <p className="text-sm text-sand-500">Paste a job posting link. The AI will read the page and fill in the company, role, and description for you to review.</p>
+            <input value={captureUrl} onChange={e => setCaptureUrl(e.target.value)} placeholder="https://company.com/jobs/123" className="input" autoFocus />
+            {captureError && <p className="text-xs text-coral-600 bg-coral-50 border border-coral-200 rounded-xl px-3 py-2">{captureError}</p>}
+            <div className="flex gap-3 justify-end">
+              <button type="button" onClick={() => setShowCapture(false)} className="btn-secondary text-sm py-2">Cancel</button>
+              <button type="submit" disabled={capturing || !captureUrl.trim()} className="btn-primary text-sm py-2 disabled:opacity-50">
+                {capturing ? '⏳ Reading…' : 'Capture →'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Status filter pills */}
       <div className="flex gap-2 flex-wrap">
@@ -88,6 +136,12 @@ export default function Applications() {
                 <label className="block text-xs font-semibold text-ocean-600 mb-1">Notes</label>
                 <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} className="input" />
               </div>
+              {form.job_listing !== undefined && form.job_listing !== '' && (
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-ocean-600 mb-1">Job Listing <span className="text-seafoam-600">· captured ✓</span></label>
+                  <textarea value={form.job_listing} onChange={e => setForm(f => ({ ...f, job_listing: e.target.value }))} rows={5} className="input font-mono text-xs" />
+                </div>
+              )}
             </div>
             <div className="flex gap-3 justify-end pt-1">
               <button type="button" onClick={() => setShowForm(false)} className="btn-secondary text-sm py-2">Cancel</button>

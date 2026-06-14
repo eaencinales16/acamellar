@@ -97,6 +97,22 @@ db.exec(`
     updated_at TEXT DEFAULT (datetime('now'))
   );
 
+  -- Interview rounds per application, with optional scheduled time for calendar export.
+  CREATE TABLE IF NOT EXISTS interviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    application_id INTEGER NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+    round TEXT,
+    scheduled_at TEXT,
+    duration_min INTEGER DEFAULT 60,
+    format TEXT,
+    interviewers TEXT,
+    location TEXT,
+    prep_notes TEXT,
+    outcome TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
   -- Saved "this is my voice" sample documents used to teach Claude the user's style.
   -- doc_type: 'resume' | 'cover_letter'
   CREATE TABLE IF NOT EXISTS style_examples (
