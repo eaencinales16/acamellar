@@ -2,8 +2,9 @@
   "name": "acamellar",
   "version": "1.0.0",
   "scripts": {
-    "build": "npm install --prefix backend && npm install --include=dev --prefix frontend && npm run build --prefix frontend && cp -r frontend/dist backend/public",
+    "build": "npm install --prefix backend && node backend/test/isolation.test.js && npm install --include=dev --prefix frontend && npm run build --prefix frontend && cp -r frontend/dist backend/public",
     "start": "node backend/index.js",
+    "test": "node backend/test/isolation.test.js",
     "dev:backend": "cd backend && node --watch index.js",
     "dev:frontend": "cd frontend && npm run dev"
   }

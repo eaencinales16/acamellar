@@ -3,14 +3,14 @@ const router = express.Router();
 const db = require('../db');
 const { chatGeneral } = require('../services/ai');
 
-// Build a compact text snapshot of the user's whole job search for coaching context
-function buildJobSearchContext() {
-  const apps = db.prepare('SELECT company, position, status, applied_date FROM applications ORDER BY updated_at DESC').all();
+// Build a compact text snapshot of this user's whole job search for coaching context
+function buildJobSearchContext(userId) {
+  const apps = db.prepare('SELECT company, position, status, applied_date FROM applications WHERE user_id = ? ORDER BY updated_at DESC').all(userId);
   const total = apps.length;
-  const byStatus = db.prepare('SELECT status, COUNT(*) as count FROM applications GROUP BY status').all();
-  const connections = db.prepare('SELECT COUNT(*) as count FROM connections').get().count;
-  const pendingOutreach = db.prepare('SELECT COUNT(*) as count FROM connections WHERE reached_out = 0').get().count;
-  const upcoming = db.prepare("SELECT title, scheduled_at FROM reminders WHERE sent = 0 AND scheduled_at >= datetime('now') ORDER BY scheduled_at ASC LIMIT 5").all();
+  const byStatus = db.prepare('SELECT status, COUNT(*) as count FROM applications WHERE user_id = ? GROUP BY status').all(userId);
+  const connections = db.prepare('SELECT COUNT(*) as count FROM connections WHERE user_id = ?').get(userId).count;
+  const pendingOutreach = db.prepare('SELECT COUNT(*) as count FROM connections WHERE user_id = ? AND reached_out = 0').get(userId).count;
+  const upcoming = db.prepare("SELECT title, scheduled_at FROM reminders WHERE user_id = ? AND sent = 0 AND scheduled_at >= datetime('now') ORDER BY scheduled_at ASC LIMIT 5").all(userId);
 
   if (total === 0 && connections === 0) {
     return 'The user has not added any applications or connections yet. Encourage them to get started.';
@@ -33,7 +33,7 @@ ${reminderList}`;
 }
 
 router.get('/', (req, res) => {
-  const messages = db.prepare('SELECT * FROM general_chat_messages ORDER BY created_at ASC').all();
+  const messages = db.prepare('SELECT * FROM general_chat_messages WHERE user_id = ? ORDER BY created_at ASC').all(req.userId);
   res.json(messages);
 });
 
@@ -41,15 +41,15 @@ router.post('/', async (req, res) => {
   const { message } = req.body;
   if (!message) return res.status(400).json({ error: 'message required' });
 
-  const profile = db.prepare('SELECT * FROM user_profile WHERE id = 1').get();
-  const history = db.prepare('SELECT role, content FROM general_chat_messages ORDER BY created_at ASC').all();
+  const profile = db.prepare('SELECT * FROM profiles WHERE user_id = ?').get(req.userId);
+  const history = db.prepare('SELECT role, content FROM general_chat_messages WHERE user_id = ? ORDER BY created_at ASC').all(req.userId);
 
-  db.prepare('INSERT INTO general_chat_messages (role, content) VALUES (?, ?)').run('user', message);
+  db.prepare('INSERT INTO general_chat_messages (user_id, role, content) VALUES (?, ?, ?)').run(req.userId, 'user', message);
 
   try {
-    const context = buildJobSearchContext();
+    const context = buildJobSearchContext(req.userId);
     const reply = await chatGeneral(profile, context, history, message);
-    db.prepare('INSERT INTO general_chat_messages (role, content) VALUES (?, ?)').run('assistant', reply);
+    db.prepare('INSERT INTO general_chat_messages (user_id, role, content) VALUES (?, ?, ?)').run(req.userId, 'assistant', reply);
     res.json({ reply });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -57,7 +57,7 @@ router.post('/', async (req, res) => {
 });
 
 router.delete('/', (req, res) => {
-  db.prepare('DELETE FROM general_chat_messages').run();
+  db.prepare('DELETE FROM general_chat_messages WHERE user_id = ?').run(req.userId);
   res.json({ success: true });
 });
 

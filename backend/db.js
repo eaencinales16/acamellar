@@ -135,4 +135,70 @@ function addColumnIfMissing(table, column, definition) {
 
 addColumnIfMissing('user_profile', 'writing_style', 'TEXT');
 
+// ---------------------------------------------------------------------------
+// Multi-user isolation: every user-data row is scoped by user_id (the Auth0 sub).
+// ---------------------------------------------------------------------------
+const USER_TABLES = [
+  'applications', 'connections', 'chat_messages', 'general_chat_messages',
+  'reminders', 'style_examples', 'interviews',
+];
+for (const t of USER_TABLES) addColumnIfMissing(t, 'user_id', 'TEXT');
+
+// Per-user profile (replaces the singleton user_profile row with id = 1).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS profiles (
+    user_id TEXT PRIMARY KEY,
+    name TEXT,
+    email TEXT,
+    resume TEXT,
+    writing_style TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+`);
+
+// The owner = first account to have logged in (claims pre-existing data).
+function ownerSub() {
+  const row = db.prepare('SELECT auth0_sub FROM authorized_users ORDER BY id ASC LIMIT 1').get();
+  return row ? row.auth0_sub : null;
+}
+const OWNER = ownerSub();
+
+// Rebuild weekly_goals so uniqueness is per (user_id, week_start), not global per week.
+const weeklyGoalsHasUserId = db.prepare('PRAGMA table_info(weekly_goals)').all().some(c => c.name === 'user_id');
+if (!weeklyGoalsHasUserId) {
+  db.exec(`
+    CREATE TABLE weekly_goals_new (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT,
+      week_start TEXT NOT NULL,
+      applications_target INTEGER DEFAULT 0,
+      connections_target INTEGER DEFAULT 0,
+      notes TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(user_id, week_start)
+    );
+    INSERT INTO weekly_goals_new (id, week_start, applications_target, connections_target, notes, created_at, updated_at)
+      SELECT id, week_start, applications_target, connections_target, notes, created_at, updated_at FROM weekly_goals;
+    DROP TABLE weekly_goals;
+    ALTER TABLE weekly_goals_new RENAME TO weekly_goals;
+  `);
+}
+
+// Backfill all pre-existing (NULL user_id) data to the owner, and migrate the old profile.
+if (OWNER) {
+  for (const t of [...USER_TABLES, 'weekly_goals']) {
+    db.prepare(`UPDATE ${t} SET user_id = ? WHERE user_id IS NULL`).run(OWNER);
+  }
+  const oldProfile = db.prepare('SELECT * FROM user_profile WHERE id = 1').get();
+  if (oldProfile) {
+    const exists = db.prepare('SELECT 1 FROM profiles WHERE user_id = ?').get(OWNER);
+    if (!exists) {
+      db.prepare('INSERT INTO profiles (user_id, name, email, resume, writing_style) VALUES (?, ?, ?, ?, ?)')
+        .run(OWNER, oldProfile.name, oldProfile.email, oldProfile.resume, oldProfile.writing_style);
+    }
+  }
+}
+
 module.exports = db;

@@ -63,9 +63,10 @@ app.get('/api/me', (req, res) => {
 });
 
 // Gate for data routes — returns JSON (not an HTML redirect) so fetch() can handle it.
+// On success, attaches req.userId so every route can scope its queries to this user.
 function requireAuth(req, res, next) {
   const a = authorize(req);
-  if (a.status === 'authorized') return next();
+  if (a.status === 'authorized') { req.userId = req.oidc.user.sub; return next(); }
   if (a.status === 'full') return res.status(403).json({ error: 'capacity_full' });
   res.status(401).json({ error: 'unauthorized' });
 }
@@ -81,14 +82,15 @@ app.use('/api/style-examples', requireAuth, require('./routes/styleExamples'));
 app.use('/api/goals', requireAuth, require('./routes/goals'));
 app.use('/api/interviews', requireAuth, require('./routes/interviews'));
 
-// Stats endpoint for dashboard
+// Stats endpoint for dashboard — scoped to the logged-in user.
 app.get('/api/stats', requireAuth, (req, res) => {
-  const total = db.prepare('SELECT COUNT(*) as count FROM applications').get().count;
-  const byStatus = db.prepare("SELECT status, COUNT(*) as count FROM applications GROUP BY status").all();
-  const connections = db.prepare('SELECT COUNT(*) as count FROM connections').get().count;
-  const pendingOutreach = db.prepare('SELECT COUNT(*) as count FROM connections WHERE reached_out = 0').get().count;
-  const recentApps = db.prepare('SELECT * FROM applications ORDER BY created_at DESC LIMIT 5').all();
-  const upcomingReminders = db.prepare("SELECT r.*, a.company, a.position FROM reminders r LEFT JOIN applications a ON r.application_id = a.id WHERE r.sent = 0 AND r.scheduled_at >= datetime('now') ORDER BY r.scheduled_at ASC LIMIT 5").all();
+  const u = req.userId;
+  const total = db.prepare('SELECT COUNT(*) as count FROM applications WHERE user_id = ?').get(u).count;
+  const byStatus = db.prepare('SELECT status, COUNT(*) as count FROM applications WHERE user_id = ? GROUP BY status').all(u);
+  const connections = db.prepare('SELECT COUNT(*) as count FROM connections WHERE user_id = ?').get(u).count;
+  const pendingOutreach = db.prepare('SELECT COUNT(*) as count FROM connections WHERE user_id = ? AND reached_out = 0').get(u).count;
+  const recentApps = db.prepare('SELECT * FROM applications WHERE user_id = ? ORDER BY created_at DESC LIMIT 5').all(u);
+  const upcomingReminders = db.prepare("SELECT r.*, a.company, a.position FROM reminders r LEFT JOIN applications a ON r.application_id = a.id WHERE r.user_id = ? AND r.sent = 0 AND r.scheduled_at >= datetime('now') ORDER BY r.scheduled_at ASC LIMIT 5").all(u);
   res.json({ total, byStatus, connections, pendingOutreach, recentApps, upcomingReminders });
 });
 
@@ -101,29 +103,31 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Daily accountability digest at 8am
+// Daily accountability digest at 8am — one per user who has set an email.
 cron.schedule('0 8 * * *', async () => {
   try {
-    const profile = db.prepare('SELECT * FROM user_profile WHERE id = 1').get();
-    if (!profile?.email) return;
-    const total = db.prepare('SELECT COUNT(*) as count FROM applications').get().count;
-    const applied = db.prepare("SELECT COUNT(*) as count FROM applications WHERE status = 'applied'").get().count;
-    const inProgress = db.prepare("SELECT COUNT(*) as count FROM applications WHERE status IN ('phone_screen','interview','offer')").get().count;
-    const connections = db.prepare('SELECT COUNT(*) as count FROM connections').get().count;
-    const pendingOutreach = db.prepare('SELECT COUNT(*) as count FROM connections WHERE reached_out = 0').get().count;
-    await sendAccountabilityDigest(profile.email, profile.name, { total, applied, inProgress, connections, pendingOutreach });
+    const profiles = db.prepare('SELECT * FROM profiles WHERE email IS NOT NULL AND email != ""').all();
+    for (const profile of profiles) {
+      const u = profile.user_id;
+      const total = db.prepare('SELECT COUNT(*) as count FROM applications WHERE user_id = ?').get(u).count;
+      const applied = db.prepare("SELECT COUNT(*) as count FROM applications WHERE user_id = ? AND status = 'applied'").get(u).count;
+      const inProgress = db.prepare("SELECT COUNT(*) as count FROM applications WHERE user_id = ? AND status IN ('phone_screen','interview','offer')").get(u).count;
+      const connections = db.prepare('SELECT COUNT(*) as count FROM connections WHERE user_id = ?').get(u).count;
+      const pendingOutreach = db.prepare('SELECT COUNT(*) as count FROM connections WHERE user_id = ? AND reached_out = 0').get(u).count;
+      await sendAccountabilityDigest(profile.email, profile.name, { total, applied, inProgress, connections, pendingOutreach });
+    }
   } catch (e) {
     console.error('Digest error:', e.message);
   }
 });
 
-// Check and send due reminders every 15 minutes
+// Check and send due reminders every 15 minutes — each goes to its owner's email.
 cron.schedule('*/15 * * * *', async () => {
   try {
     const due = db.prepare("SELECT r.*, a.company, a.position FROM reminders r LEFT JOIN applications a ON r.application_id = a.id WHERE r.sent = 0 AND r.scheduled_at <= datetime('now')").all();
-    const profile = db.prepare('SELECT * FROM user_profile WHERE id = 1').get();
-    const to = profile?.email || process.env.GMAIL_USER;
     for (const reminder of due) {
+      const profile = reminder.user_id ? db.prepare('SELECT email FROM profiles WHERE user_id = ?').get(reminder.user_id) : null;
+      const to = profile?.email || process.env.GMAIL_USER;
       await sendReminder(to, reminder.title, reminder.message,
         reminder.company ? { company: reminder.company, position: reminder.position } : null);
       db.prepare("UPDATE reminders SET sent = 1, sent_at = datetime('now') WHERE id = ?").run(reminder.id);
